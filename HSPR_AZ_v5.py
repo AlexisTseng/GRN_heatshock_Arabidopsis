@@ -13,7 +13,7 @@ dependencies
 
 description
     Re-organised the original code in functions. Introduced parser & flags for easy change of iteration numbers and time step. (HSPR_AZ_tidy.py)
-    
+
     Stored parameters in a dictionary. Changed naming convention of output files (HSPR_AZ_v2.py)
 
     Combined plotting function. Introduced progress reporter. Output format either csv or pcl. Optional figure saving (HSPR_AZ_v3.py)
@@ -47,7 +47,7 @@ description
     Whether to save Gillespi simulation output as csv or picklefile (default: csv)
 
 -- importData,-imd
-    Import exitsing simulation data (default:)
+    Import exitsing simulation data (default: )
 
 ################################################################################
 
@@ -75,7 +75,6 @@ import pandas as pd
 import sys
 
 
-## Hello world
 
 def main(opt):
     print("Step1: Specify output directory")
@@ -653,19 +652,15 @@ if __name__ == "__main__":
     p = ap.ArgumentParser(prog=sscript, prefix_chars="-", usage=text_dict["usage"],
                           description=desc, epilog=text_dict["reference"])
     p.add_argument("-v", "--version", action="version", version=text_dict["version"])
-    for argname, argopts in help_dict.items():
+    for argname,argopts in help_dict.items():
         argshort = argopts["argshort"]
-        if argshort == "sfg":  # Modify the block for the sfg argument
-            p.add_argument(argshort, argname, dest=f"{argshort[1:]}",\
-                           action="store_true", help=argopts["help"],\
-                           default=argopts["default"], type=bool)
-        elif argopts["choices"]:
-            p.add_argument(argshort, argname, dest=f"{argshort[1:]}",\
-                           action=argopts["action"], help=argopts["help"],\
-                           default=argopts["default"], choices=argopts["choices"])
+        if argopts["choices"]:
+            p.add_argument(argshort, argname,            dest=f"{argshort[1:]}",\
+                           action=argopts["action"],     help=argopts["help"],\
+                           default=argopts["default"],   choices=argopts["choices"])
         else:
             p.add_argument(argopts["argshort"], argname, dest=f"{argshort[1:]}",\
-                           action=argopts["action"], help=argopts["help"],\
+                           action=argopts["action"],     help=argopts["help"],\
                            default=argopts["default"])
     p._optionals.title = "arguments"
     opt = vars(p.parse_args())

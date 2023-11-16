@@ -1,0 +1,2 @@
+init_HSFA1,init_HSPR,init_C_HSFA1_HSPR,init_MMP,init_FMP,init_C_HSPR_MMP,init_HSFA2,init_HSFB,Time,a1,a2,a3,a4,a5,a6,a7,a8,h1,h2,h3,h4,h5,h6,c1,c3,d1,d3,d4_heat,d4_norm,Decay1,Decay2,Decay3,Decay4,Decay6,Decay7,Decay8,Decay5,leakage,numberofiteration
+1,2,50,0,50,50,1,1,0.0,10.0,100.0,5.0,5.0,5.0,0.2,10,5.0,1.0,1.0,1.0,1.0,1.0,1,10.0,0.5,0.1,0.01,0.05,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.1,0.01,2
