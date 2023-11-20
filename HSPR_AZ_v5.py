@@ -26,7 +26,7 @@ description
     The number of interations for Gillespi simulation
 
 --timeStep,-tsp
-    The time duration for each Gillespi simulation run/iteration (default:20000)
+    The time duration for each Gillespi simulation run/iteration
 
 --heatShockStart,-hss
     The time point at which a heat shock is introduced (default:15000)
@@ -113,11 +113,11 @@ def extract_para_from_name(filename, opt):
         opt.hss = int(match.group(3))
         opt.hsd = int(match.group(4))
         opt.ofm = str(match.group(5))
-        print("Number of Iteration:", numberofiteration)
-        print("End Time:", end_time)
-        print("HSstart:", opt.hss)
-        print("HSduration:", opt.hsd)
-        print("File Extension:", opt.ofm)
+        #print("Number of Iteration:", numberofiteration)
+        #print("End Time:", end_time)
+        #print("HSstart:", opt.hss)
+        #print("HSduration:", opt.hsd)
+        #print("File Extension:", opt.ofm)
     else:
         print("Filename does not match the expected pattern.")
     return data_file, numberofiteration, end_time, opt
@@ -145,7 +145,7 @@ def param_spec(opt):
         'a3': 5.0,
         'a4': 5.0,
         'a5': 5.0,
-        'a6': 0.2,
+        'a6': 0.2, # decay path 1 of MMP-HSPR?????? 
         'a7': 10,
         'a8': 5.0,
         ## Ka in Hill equation
@@ -159,17 +159,17 @@ def param_spec(opt):
         'c1': 10.0,
         'c3': 0.5,
         ## decay rates
-        'd1': 0.1,
-        'd3': 0.01,
+        'd1': 0.1, # decay path 1 of A1-HSPR
+        'd3': 0.01, # decay path 1 of MMP-HSPR
         'd4_heat': float(opt.mfh),
         'd4_norm': float(opt.mfn),
         'Decay1': 0.01,
-        'Decay2': 0.01,
+        'Decay2': 0.01, # decay of free HSPR
         'Decay3': 0.01,
         'Decay4': 0.01,
         'Decay6': 0.01,
-        'Decay7': 0.01,
-        'Decay8': 0.01,
+        'Decay7': 0.01, # decay path 2 of A1-HSPR
+        'Decay8': 0.01, # decay path 1 of MMP-HSPR
         'Decay5': 0.1,
         ####
         'leakage': 0.01,
@@ -183,10 +183,12 @@ def param_spec(opt):
 ## 2. Generate Output Directories
 ##########################################################################
 def dir_gen():
-    cwd = os.getcwd()
-    data_dir = os.path.join(cwd,"Ritu_simulation_data")
+    cwd = os.getcwd() #GRN_heatshock_Arabidopsis
+    partiii_dir = os.path.dirname(cwd)
+
+    data_dir = os.path.join(partiii_dir,"Ritu_simulation_data")
     if not os.path.isdir(data_dir): os.makedirs(data_dir, 0o777)
-    plot_dir = os.path.join(cwd,"Gillespi_plots")
+    plot_dir = os.path.join(partiii_dir,"Gillespi_plots")
     if not os.path.isdir(plot_dir): os.makedirs(plot_dir, 0o777)
     return data_dir, plot_dir
 
@@ -293,8 +295,12 @@ def gillespi(param_dict, opt):
             Rn = random.random() #getting random numbers
             Tau=-math.log(Rn)/TotR #when the next thing happen
             #Rn2= random.uniform(0,TotR) # for the next random number
+            # HSFA1, HSPR, C_HSFA1_HSPR, MMP, FMP, C_HSPR_MMP, HSFA2, HSFB
             Stoich = [[1,0,0,0,0,0,0,0], [-1,0,0,0,0,0,0,0], [0,1,0,0,0,0,0,0], [0,-1,0,0,0,0,0,0], [-1,-1,1,0,0,0,0,0], [1,1,-1,0,0,0,0,0],[0,0,-1,0,0,0,0,0],
-                    [0,0,0,1,-1,0,0,0], [0,0,0,-1,0,0,0,0], [0,0,0,0,1,0,0,0], [0,0,0,0,-1,0,0,0], [0,-1,0,-1,0,1,0,0], [0,1,0,1,0,-1,0,0],[0,1,0,0,1,-1,0,0],[0,0,0,0,0,-1,0,0],
+                    [0,0,0,1,-1,0,0,0], [0,0,0,-1,0,0,0,0], [0,0,0,0,1,0,0,0], [0,0,0,0,-1,0,0,0], [0,-1,0,-1,0,1,0,0], 
+                    [0,1,0,1,0,-1,0,0], #R_C_HSPR_MMP_dec2 = dissociation of the complex to form free HSPR and MMP -> dissociation
+                    [0,1,0,0,1,-1,0,0], #R_C_HSPR_MMP_dec2 = dissociation of the complex to form free HSPR and FMP -> refolding step
+                    [0,0,0,0,0,-1,0,0], #R_C_HSPR_MMP_dec3, complex decrease by 1, decay 8
                     [0,0,0,0,0,0,1,0], [0,0,0,0,0,0,-1,0], [0,0,0,0,0,0,0,1], [0,0,0,0,0,0,0,-1]]
 
             Outcome = random.choices(Stoich, weights = listR, k=1)
@@ -418,12 +424,14 @@ def plot_outcome(data_file, data_dir, plot_dir, numberofiteration, end_time, opt
     ### Data tidying
 
     if opt.ofm == "csv":
-        data_df = pd.read_csv(f"{data_file}")
+        try: data_df = pd.read_csv(f"{data_file}")
+        except: data_df = pd.read_csv(f"{data_dir}/{data_file}")
     elif opt.ofm == "pcl":
-        data_df = loadData(f"{data_file}")
-    
-    #print(data_df.shape)
+        try: data_df = loadData(f"{data_file}")
+        except: loadData(f"{data_dir}/{data_file}")
     data_df['totalHSPR'] = data_df['HSPR'] + data_df['C_HSFA1_HSPR'] + data_df['C_HSPR_MMP']
+    print(data_df)
+    print(data_df.shape)
     ### number of rows and columns for all iterations
     Rows = int(math.sqrt(numberofiteration))
     Columns = int(math.ceil(numberofiteration / Rows))
@@ -434,6 +442,7 @@ def plot_outcome(data_file, data_dir, plot_dir, numberofiteration, end_time, opt
     ### Call ploting functions
     ########################################
 
+
     ### Plot trajectories of all species for all iterations
     plot_allvsTime_separate(data_df, grouped_data, plot_dir, numberofiteration, end_time, Rows, Columns, opt)
 
@@ -443,13 +452,36 @@ def plot_outcome(data_file, data_dir, plot_dir, numberofiteration, end_time, opt
     ### Plot overlayed trajectory of A1 concentrations for all trajectory
     #plot_A1vsTime_asOne(grouped_data, plot_dir, numberofiteration, end_time, opt)
 
+    plot_HSPR_hist(data_df, grouped_data, plot_dir, numberofiteration, end_time, Rows, Columns, opt)
 
 
-#
-# def plot_HSPR_hist(data_df, grouped_data, plot_dir, numberofiteration, end_time, Rows, Columns, opt):
+
+def plot_HSPR_hist(data_df, grouped_data, plot_dir, numberofiteration, end_time, Rows, Columns, opt):
+    print("Plot total HSPR histogram")
+    ss1_start = 1000
+    ss1_end = int(opt.hss)
+    ssHS_start = int(opt.hss) + 500
+    ssHS_end = int(opt.hss) + int(opt.hsd)
+    ss3_start = ssHS_end + 500
+    ss3_end = end_time
+
+    ss1_df = data_df[(data_df['time'] >= ss1_start) & (data_df['time'] <= ss1_end)].groupby('Iteration_Identifier')['totalHSPR'].mean()
+    ssHS_df = data_df[(data_df['time'] >= ssHS_start) & (data_df['time'] <= ssHS_end)].groupby('Iteration_Identifier')['totalHSPR'].mean()
+    ss1_df = data_df[(data_df['time'] >= ss3_start) & (data_df['time'] <= ss3_end)].groupby('Iteration_Identifier')['totalHSPR'].mean()
+    #print(time_filter_df)
+    #print(time_filter_df.shape)
+
+
+
+    plt.hist(ss1_df, bins=10, edgecolor='black', label="before HS steady state")
+    #plt.hist(ss_HS, label="during HS steady state")
+    #plt.hist(ss_3, label="after HS steady state")
+
+    plt.xlabel("total HSPR")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.show()
     
-
-
 
 def plot_allvsTime_separate(data_df, grouped_data, plot_dir, numberofiteration, end_time, Rows, Columns, opt):
 
@@ -483,13 +515,19 @@ def plot_allvsTime_separate(data_df, grouped_data, plot_dir, numberofiteration, 
             # Adjust the figure size to accommodate the legend
             plt.subplots_adjust(right=0.8)  # Increase the right margin
     fig.suptitle('Plot of all concentrations vs time for all iterations separately')
+    plt.tight_layout()
 
 
     if bool(opt.sfg) == True:
         plot_name = f"{plot_dir}/separate_allConc_vs_time_numIter{numberofiteration}_Time{end_time}_HSstart{opt.hss}_HSduration{opt.hsd}.pdf"
         unique_plot_name = get_unique_filename(plot_name)
         plt.savefig(f"{unique_plot_name}")
-        print(f"save figure{opt.sfg == True}")
+
+        plot_name = f"{plot_dir}/separate_allConc_vs_time_numIter{numberofiteration}_Time{end_time}_HSstart{opt.hss}_HSduration{opt.hsd}.svg"
+        unique_plot_name = get_unique_filename(plot_name)
+        plt.savefig(f"{unique_plot_name}")
+
+        print(f"save figure {opt.sfg == True}")
 
     plt.show()
     plt.close()
@@ -522,9 +560,12 @@ def plot_totalHSPRvsTime_subplots(grouped_data, data_df, plot_dir, numberofitera
 
         # Set the title for the entire plot
     fig.suptitle('Plot of time vs total HSPR for all Iterations separately')
-    
+    plt.tight_layout()
     if bool(opt.sfg) == True:
         plot_name = f"{plot_dir}/separate_totalHSPR_vs_time_numIter{numberofiteration}_Time{end_time}_HSstart{opt.hss}_HSduration{opt.hsd}.pdf"
+        unique_plot_name = get_unique_filename(plot_name)
+        plt.savefig(f"{unique_plot_name}")
+        plot_name = f"{plot_dir}/separate_totalHSPR_vs_time_numIter{numberofiteration}_Time{end_time}_HSstart{opt.hss}_HSduration{opt.hsd}.svg"
         unique_plot_name = get_unique_filename(plot_name)
         plt.savefig(f"{unique_plot_name}")
 
@@ -543,13 +584,14 @@ def plot_A1vsTime_asOne(grouped_data, plot_dir, numberofiteration, end_time, opt
         ax1.legend()
         ax1.set_ylabel('HSFA1')
         ax1.set_title('Plot of HSFA1 vs time for all Iterations')
-
+    plt.tight_layout()
     if bool(opt.sfg) == True:
         plot_name = f"{plot_dir}/allAsOne_{ax1.get_ylabel()}_vs_{ax1.get_xlabel()}_numIter{numberofiteration}_Time{end_time}_HSstart{opt.hss}_HSduration{opt.hsd}.pdf"
         unique_plot_name = get_unique_filename(plot_name)
-
         plt.savefig(f"{unique_plot_name}")
-    
+        plot_name = f"{plot_dir}/allAsOne_{ax1.get_ylabel()}_vs_{ax1.get_xlabel()}_numIter{numberofiteration}_Time{end_time}_HSstart{opt.hss}_HSduration{opt.hsd}.svg"
+        unique_plot_name = get_unique_filename(plot_name)
+        plt.savefig(f"{unique_plot_name}")
     plt.show()
     plt.close()
 
